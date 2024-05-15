@@ -295,7 +295,7 @@ class ZeroAssistant:
         self.root.title("ZERO: THE VIRTUAL ASSISTANT")
         self.root.geometry("1600x1800")
 
-        img = Image.open('github.png')
+        img = Image.open('zero.png')
         width, height = img.size
         new_width = 800
         new_height = int(height * (new_width / width))

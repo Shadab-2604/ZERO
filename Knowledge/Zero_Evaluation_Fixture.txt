@@ -1,0 +1,8 @@
+Document: Zero_Evaluation_Fixture.txt
+
+The fictional project Orion uses port 43821.
+Its release code name is Amber Lantern.
+The project's documented owner is the fictional team Delta.
+The test dataset contains 120 records.
+Exactly 30 records are marked complete.
+The documented completion percentage is 25%.

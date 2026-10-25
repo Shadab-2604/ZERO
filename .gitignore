@@ -1,0 +1,103 @@
+# ==============================================================================
+# ZERO AI — SAFE GIT EXCLUSIONS (.gitignore)
+# ==============================================================================
+
+# Python bytecode, builds, and distribution
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+*.local.env
+*.env.local
+*.env.*.local
+*.secret
+secrets.*
+
+# Local Databases, Caches, & Transient State
+data/*.db
+data/*.sqlite3
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+!data/.gitkeep
+
+# Application Runtime Logs
+logs/*.log
+logs/*.json
+!logs/.gitkeep
+
+# Testing & Linting Caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Audio Recordings, Temp files, & Archives
+scratch/
+temp/
+tmp/
+*.wav
+*.mp3
+*.zip
+*.tar.gz
+*.7z
+
+# Generated PDF Exports & Diagnostic Reports
+exports/*.pdf
+exports/*.html
+!exports/.gitkeep
+reports/*.json
+reports/*.html
+!reports/.gitkeep
+
+# Large AI Model Files (Models should be pulled via Ollama independently)
+models/
+*.gguf
+*.bin
+*.safetensors
+*.onnx
+
+# Knowledge Base (Exclude user's private documents & heavy PDFs, keep test fixtures)
+Knowledge/*
+!Knowledge/.gitkeep
+!Knowledge/README.md
+!Knowledge/Zero_Evaluation_Fixture.txt
+!Knowledge/zero_architecture_overview.md
+
+# Operating System & IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+Desktop.ini
+.DS_Store

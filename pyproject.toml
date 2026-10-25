@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zero-ai"
+version = "0.1.0"
+description = "Zero AI - Personal Desktop Assistant with JARVIS-style PySide6 interface and modular Python backend"
+authors = [{ name = "Zero AI Development Team" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.6.0,<6.9.0",
+    "fastapi>=0.110.0,<0.116.0",
+    "uvicorn[standard]>=0.28.0,<0.33.0",
+    "pydantic>=2.6.0,<3.0.0",
+    "pydantic-settings>=2.2.0,<3.0.0",
+    "sqlalchemy>=2.0.28,<2.1.0",
+    "python-dotenv>=1.0.1,<2.0.0",
+    "httpx>=0.27.0,<0.29.0",
+    "psutil>=5.9.8,<7.0.0",
+    "pyttsx3>=2.90",
+    "SpeechRecognition>=3.10.0",
+    "PyAudio>=0.2.14",
+    "pywin32>=306; sys_platform == 'win32'",
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0,<9.0.0",
+    "pytest-asyncio>=0.23.0,<0.26.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+pythonpath = ["."]

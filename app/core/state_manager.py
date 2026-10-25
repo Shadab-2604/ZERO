@@ -1,6 +1,19 @@
 """
-Zero assistant state machine.
-Supported states: STARTING, SLEEPING, READY, LISTENING, THINKING, SPEAKING, ERROR.
+Zero AI — Finite State Machine & Operational Lifecycle Manager.
+
+Purpose:
+Maintains thread-safe assistant state transitions, tracks historical state
+provenance, and dispatches change events to registered UI, audio, and API observers.
+
+Responsibilities:
+- Enforcing valid states across the assistant lifecycle:
+  `STARTING`, `SLEEPING`, `READY`, `LISTENING`, `HEARING_YOU`, `PROCESSING`, `SPEAKING`, `INTERRUPTED`, `ERROR`.
+- Providing re-entrant thread safety (`threading.RLock`) for concurrent state queries from GUI, audio worker threads, and REST API handlers.
+- Dispatching asynchronous state callbacks outside the critical section to prevent re-entrant deadlocks with Qt signals or audio locks.
+
+Deliberately Does Not Handle:
+- Audio hardware streaming or microphone muting (delegated to `app.voice`).
+- Natural language intent classification (delegated to `app.core.intent_router`).
 """
 
 from enum import Enum
@@ -13,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 class AssistantState(str, Enum):
+    """
+    Enumeration of all valid operational states for the Zero AI assistant.
+    Inherits from str to allow direct JSON serialization and string comparisons.
+    """
     STARTING = "STARTING"
     SLEEPING = "SLEEPING"
     READY = "READY"
@@ -27,7 +44,16 @@ class AssistantState(str, Enum):
 
 
 class StateManager:
-    """Thread-safe manager for Zero assistant state transitions."""
+    """
+    Thread-safe finite state machine orchestrator for Zero AI.
+    
+    Attributes:
+        _current_state: Currently active AssistantState.
+        _previous_state: State immediately preceding the active state.
+        _lock: Reentrant lock guaranteeing atomic state transitions.
+        _callbacks: Registered observer functions invoked on transition.
+        _last_transition_time: UTC timestamp of the most recent transition.
+    """
 
     def __init__(self, initial_state: AssistantState = AssistantState.SLEEPING):
         self._current_state = initial_state

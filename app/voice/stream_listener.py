@@ -1,12 +1,32 @@
 """
-Zero AI Streaming Voice Listener with Voice Activity Detection (VAD),
-Utterance Continuation, Real-Time Live Partial Captions, and Barge-In Audio Interruption.
+Zero AI — Real-Time Streaming Voice Listener & Voice Activity Detection (VAD).
 
-Key Requirements:
-- Scenario A: Normal conversation (User speaks -> Live captions -> Finalized utterance -> Assistant answers).
-- Scenario B: Pause and continue talking (Silence threshold 1.5-2.0s, continuation window up to 5.0s without premature send).
-- Scenario C & D: Barge-in interruption during entire assistant speech output (User starts talking -> Instant TTS halt -> INTERRUPTED state -> Captures user speech -> Submits finalized utterance).
-- Audio isolation: Discards speaker echo so assistant never transcribes its own voice.
+Purpose:
+Captures continuous real-time microphone PCM audio, applies dynamic RMS energy
+Voice Activity Detection (VAD), streams real-time partial transcripts to the
+Live Caption HUD, manages utterance pause continuation, and triggers instant
+barge-in interruption during assistant speech playback.
+
+Key Scenarios & Behaviors:
+- Normal Conversation: User speaks -> Real-time live captions displayed ->
+  Speech ends (silence > 1.8s) -> Final transcript submitted to assistant.
+- Pause & Continuation: User pauses mid-thought for up to 1.8 seconds.
+  If speech resumes before 5.0s max continuation window expires, the utterance
+  is preserved and extended without premature submission.
+- Instant Barge-In: User speaks while assistant TTS is speaking -> RMS energy
+  exceeds speech threshold -> SpeechSynthesizer immediately halted -> Assistant
+  transitions to INTERRUPTED state -> Captures new user utterance cleanly.
+- Acoustic Isolation: Speaker echo suppression ensures Zero never transcribes
+  its own synthesized voice.
+
+Important Dependencies:
+- `PyAudio`: Real-time cross-platform audio I/O streaming.
+- `SpeechRecognition`: Audio frame transcription engine.
+- `app.core.state_manager.AssistantState`: Lifecycle state tracking.
+
+Deliberately Does Not Handle:
+- Speech synthesis or Windows SAPI5 COM playback (handled strictly in `SpeechSynthesizer`).
+- Command routing or tool execution (handled strictly in `app.core.assistant`).
 """
 
 import logging
@@ -37,14 +57,22 @@ except ImportError:
 
 
 def calculate_rms(raw_pcm_bytes: bytes) -> float:
-    """Calculate root-mean-square energy of 16-bit mono PCM audio."""
+    """
+    Calculate root-mean-square (RMS) energy of 16-bit signed mono PCM audio.
+    
+    Args:
+        raw_pcm_bytes: Raw 16-bit little-endian PCM byte string.
+        
+    Returns:
+        float: Root-mean-square amplitude (0.0 for empty or invalid buffer).
+    """
     if not raw_pcm_bytes:
         return 0.0
     count = len(raw_pcm_bytes) // 2
     if count == 0:
         return 0.0
     try:
-        # Unpack short integers (h = 16-bit signed)
+        # Unpack short integers (h = 16-bit signed little-endian)
         shorts = struct.unpack(f"<{count}h", raw_pcm_bytes[:count * 2])
         sum_squares = sum(s * s for s in shorts)
         return math.sqrt(sum_squares / count)
@@ -56,6 +84,9 @@ class StreamingVoiceRecognizer:
     """
     Real-time streaming audio listener with energy-based VAD,
     partial caption recognition, pause continuation, and barge-in interruption.
+    
+    Coordinates microphone audio streaming via PyAudio in a dedicated daemon
+    worker thread, maintaining low latency and preventing main thread blocking.
     """
 
     def __init__(

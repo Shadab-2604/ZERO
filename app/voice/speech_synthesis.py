@@ -1,7 +1,26 @@
 """
-Speech synthesis (TTS) subsystem for Zero AI.
-Uses pyttsx3 with background worker threading and COM isolation for Windows SAPI5.
-Includes interruptible stop capability, automatic engine recovery, and completion synchronization.
+Zero AI — Speech Synthesis (TTS) Engine & Windows SAPI5 Subsystem.
+
+Purpose:
+Coordinates non-blocking text-to-speech generation using Windows SAPI5 via
+`pyttsx3`. Runs inside an isolated single-threaded apartment (STA) COM worker
+thread to prevent COM marshaling deadlocks and GUI freezing.
+
+Responsibilities:
+- Asynchronous FIFO speech queuing with start/completion callback synchronization.
+- Markdown sanitization: strips code blocks, tables, and URLs from audio output,
+  substituting a concise summary and pointing users to their Live Caption HUD.
+- Low-latency barge-in speech interruption (`stop()`): immediately purges queued
+  utterances and resets COM buffers.
+- Automatic engine re-initialization and recovery upon unexpected audio driver drops.
+
+Important Dependencies:
+- `pyttsx3`: Cross-platform TTS wrapper (using SAPI5 on Windows).
+- `pythoncom`: Windows Component Object Model (COM) apartment management.
+
+Deliberately Does Not Handle:
+- Microphone capture or speech recognition (handled strictly in `app.voice.stream_listener`).
+- Natural language generation or prompt routing (handled strictly in `app.ai`).
 """
 
 import logging
@@ -16,7 +35,12 @@ logger = logging.getLogger(__name__)
 
 
 class SpeechSynthesizer:
-    """Non-blocking text-to-speech engine with stop/interrupt support and completion tracking."""
+    """
+    Non-blocking text-to-speech engine with stop/interrupt support and completion tracking.
+    
+    Manages an isolated background thread initialized with `pythoncom.CoInitialize()`,
+    guaranteeing safe Windows COM interop and preventing GUI thread starvation.
+    """
 
     def __init__(self):
         self._queue: queue.Queue[tuple[str, Callable | None, Callable | None, threading.Event | None]] = queue.Queue()

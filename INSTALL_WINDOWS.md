@@ -238,9 +238,9 @@ All conversation history and knowledge index tables are stored in `data/zero.db`
 * Your documents in `Knowledge/` and generated PDFs in `exports/` are standard files and can be backed up with any backup tool.
 
 ### Running Automated Tests
-Run the full 71-test validation suite:
+Run the full 192-test validation suite:
 ```powershell
-.\.venv\Scripts\pytest.exe -v
+.\.venv\Scripts\python.exe -m pytest -v
 ```
 
 ---

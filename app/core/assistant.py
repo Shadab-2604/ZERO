@@ -1,5 +1,32 @@
 """
-Zero AI core assistant controller coordinating state, intents, briefings, tools, and conversations.
+Zero AI — Core Assistant Controller & Subsystem Orchestrator.
+
+Purpose:
+Acts as the central coordination hub and business logic controller for the Zero AI
+desktop assistant. Mediates between user inputs (GUI, voice transcripts, or REST API),
+the finite state machine, local AI models, knowledge stores, and approved desktop tools.
+
+Responsibilities:
+- State lifecycle management (delegating transitions to `StateManager`).
+- Utterance parsing and pattern-matched intent classification (`IntentRouter`).
+- Delegating inference to local Ollama models (`LocalAIService`) or deterministic Python AST math (`LocalCalculator`).
+- Orchestrating verified RAG document searches and rebuilds (`KnowledgeService`).
+- Executing security-allowlisted desktop and network actions (`ActionRegistry`).
+- Managing active conversation session history and recording audited activity events (`ConversationStore`, `ActivityStore`).
+- Triggering verified HTML-to-PDF report generation (`PDFGenerator`).
+
+Important Dependencies & Integrations:
+- `app.core.state_manager`: Finite State Machine governing assistant operational states.
+- `app.core.intent_router`: High-speed regular expression and token-based intent matcher.
+- `app.core.conversation_manager`: Multi-turn dialogue history and prompt compilation.
+- `app.tools.registry`: Allowlisted action registry for desktop automation.
+- `app.knowledge.service`: Local RAG SQLite FTS5 ingestion and search engine.
+
+Deliberately Does Not Handle:
+- Direct audio hardware streaming or microphone capture (handled strictly in `app.voice.stream_listener`).
+- Speech synthesis COM threading or audio output buffers (handled strictly in `app.voice.speech_synthesis`).
+- Low-level Win32 API window hooks or process table queries (handled strictly in `app.services.desktop_control`).
+- Raw HTTP connection pooling or socket transport to Ollama (handled strictly in `app.ai.local_service`).
 """
 
 import logging
@@ -18,7 +45,12 @@ logger = logging.getLogger(__name__)
 
 
 class ZeroAssistant:
-    """Central engine of the Zero AI desktop assistant."""
+    """
+    Central orchestrator and application controller for Zero AI.
+    
+    Coordinates the finite state machine, intent routing, dialogue management,
+    system diagnostics, and tool execution while enforcing local-only security boundaries.
+    """
 
     def __init__(self):
         self.state_manager = StateManager(initial_state=AssistantState.SLEEPING)

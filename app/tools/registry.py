@@ -1,7 +1,24 @@
 """
-Safe Allowlisted Tool & Action Registry for Zero AI.
-Enforces strict parameter validation, prevents arbitrary shell/script execution,
-and returns structured, verified results.
+Zero AI — Safe Allowlisted Action Registry & Tool Security Boundary.
+
+Purpose:
+Maintains the centralized registry of approved local tools and system actions.
+Enforces parameter validation, prevents arbitrary shell/script execution,
+and standardizes tool execution into structured `ToolResult` payloads.
+
+Responsibilities:
+- Registering authorized actions (window management, process listing, network diagnostics, app launching).
+- Validating incoming argument types and schemas against tool definitions before execution.
+- Preventing execution of unregistered or arbitrary shell commands.
+- Standardizing dual-format responses: concise summaries for audio speech synthesis,
+  and rich Markdown tables/code blocks for UI chat transcripts.
+
+Important Dependencies:
+- `app.services.desktop_control`: Safe Win32 automation backend.
+- `app.tools.network_diagnostics`: Read-only socket and ping diagnostic probes.
+
+Deliberately Does Not Handle:
+- Utterance parsing or natural language intent extraction (handled in `app.core.intent_router`).
 """
 
 from dataclasses import dataclass, field
@@ -13,10 +30,20 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ToolResult:
-    """Standard execution result from a registered tool."""
+    """
+    Standard execution result from a registered tool.
+    
+    Attributes:
+        success: Whether the action executed without critical error.
+        summary: Short, natural-language sentence suitable for speech synthesis.
+        detailed_text: Formatted markdown string for the visual chat transcript.
+        data: Raw structured dictionary of extracted telemetry or metadata.
+        error: Error description if execution failed.
+        raw_output: Optional unmodified command or socket output for debugging.
+    """
     success: bool
-    summary: str           # Spoken / concise summary
-    detailed_text: str     # Formatted markdown output for transcript
+    summary: str
+    detailed_text: str
     data: dict = field(default_factory=dict)
     error: str | None = None
     raw_output: str | None = None
@@ -24,7 +51,16 @@ class ToolResult:
 
 @dataclass
 class ToolDefinition:
-    """Definition of an approved, allowlisted tool."""
+    """
+    Definition and security metadata of an approved, allowlisted tool.
+    
+    Attributes:
+        name: Unique action identifier string.
+        description: Natural-language explanation of tool capabilities.
+        handler: Callable executing the verified logic and returning a ToolResult.
+        parameters: Expected argument schema with types and default values.
+        requires_confirmation: Whether user confirmation is mandatory before execution.
+    """
     name: str
     description: str
     handler: Callable[..., ToolResult]

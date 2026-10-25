@@ -1,8 +1,29 @@
 """
-Single local AI service for Zero AI.
-Coordinates deterministic calculations, intent-based model routing between
-Llama (general assistant) and Qwen Coder (programming/code), and local Knowledge grounding
-using strictly local Ollama inference.
+Zero AI — Local AI Subsystem & Ollama Model Routing Engine.
+
+Purpose:
+Coordinates 100% offline open-weight language model inference via the local
+Ollama REST API (`http://127.0.0.1:11434`). Applies dual-model routing between
+general conversational models and specialized coding models, backed by local
+deterministic calculation safeguards.
+
+Responsibilities:
+- Triaging user prompts into `CALCULATION`, `CODE`, or `CHAT` route targets:
+  - `CALCULATION`: Handled deterministically by `LocalCalculator` (zero hallucination).
+  - `CODE`: Routed to `qwen2.5-coder:7b` for code synthesis, debugging, and SQL analysis.
+  - `CHAT`: Routed to `llama3.2:latest` (3B) for fast natural dialogue and daily briefings.
+- Augmenting prompt context with retrieved RAG knowledge passages.
+- Managing HTTP client connection pooling, request timeouts, and error recovery.
+
+Important Dependencies & Integrations:
+- Ollama runtime (`http://127.0.0.1:11434`).
+- `httpx`: High-performance asynchronous and synchronous HTTP client.
+- `app.core.calculator.LocalCalculator`: Safe AST-based deterministic arithmetic engine.
+
+Deliberately Does Not Handle:
+- Parsing, indexing, or chunking raw documents (handled strictly in `app.knowledge`).
+- Storing conversation messages or audit history (handled strictly in `app.memory`).
+- Direct audio capture or TTS voice rendering (handled strictly in `app.voice`).
 """
 
 from enum import Enum
@@ -20,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 class RouteTarget(str, Enum):
+    """Routing targets for user input processing."""
     CALCULATION = "CALCULATION"
     CODE = "CODE"
     CHAT = "CHAT"
@@ -27,8 +49,10 @@ class RouteTarget(str, Enum):
 
 class LocalAIService(BaseAIProvider):
     """
-    Central local AI service for Zero AI.
-    Executes all inference locally via Ollama with zero cloud dependencies.
+    Central local AI inference and model routing engine for Zero AI.
+    
+    Routes user requests between Python AST deterministic evaluation and local
+    Ollama models (Llama 3.2 for dialogue, Qwen 2.5 Coder for programming).
     """
 
     # Keyword and syntax patterns for detecting coding/programming queries

@@ -18,8 +18,9 @@ Zero's capabilities are implemented and validated by unit and integration tests:
 | :--- | :--- | :--- |
 | **Local AI Engine** | Zero cloud dependence. Local chat and technical coding via HTTP REST API. | Ollama, Llama 3.2 (3B), Qwen 2.5 Coder (7B/3B) |
 | **Voice & Speech** | Real-time streaming PCM listener, energy VAD, barge-in interruption during TTS, 1.8s silence continuation window, code-aware spoken summaries. | PyAudio, SpeechRecognition, pyttsx3 (SAPI5 COM) |
+| **Stitch Desktop GUI** | High-contrast obsidian dark interface with 36px telemetry titlebar, 64px navigation rail, Command Center with procedural AI orb, Live Transcript with Ctrl+F and code execution, and System Control window bento registry with safe allowlisted operations. | PySide6, Obsidian Command Theme, Win32API |
 | **Live Caption HUD** | Floating transparent overlay showing live word stream, states (`LISTENING`, `HEARING YOU`, `PROCESSING`, `SPEAKING`, `INTERRUPTED`), markdown & code browser. | PySide6 Qt Widgets |
-| **Desktop Automation** | Safe window controls: Focus, Minimize, Restore, Maximize, graceful `WM_CLOSE`. Application discovery via Start Menu shortcuts. Read-only system telemetry (CPU, RAM, Disk, Network). | Windows User32, Win32GUI, WinSta0\Default, psutil |
+| **Desktop Automation** | Safe window controls: Focus, Minimize, Restore, Maximize, Tile Left, graceful `WM_CLOSE`. Application discovery via Start Menu shortcuts. Read-only system telemetry (CPU, RAM, Disk, Network). | Windows User32, Win32GUI, WinSta0\Default, psutil |
 | **Knowledge Base (RAG)** | Recursive subfolder scanning, SHA-256 deduplication, incremental sync, search citations with relative paths, media rejection. | SQLite FTS5, PyPDF, python-docx, openpyxl |
 | **Executive Reports** | HTML report generation with styled typography, tables, and downloadable PDF output. | WeasyPrint / Playwright Chromium |
 | **Security Layer** | Strict Python allowlist. Zero arbitrary shell, bash, CMD, PowerShell, file-writing, or registry tools exposed to the LLM. | `ActionRegistry` allowlist |

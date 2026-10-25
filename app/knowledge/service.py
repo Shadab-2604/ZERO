@@ -1,6 +1,27 @@
 """
-Knowledge Base Service orchestrating document scanning, incremental indexing,
-RAG context retrieval, and Windows explorer integration for Zero AI.
+Zero AI — Knowledge Base Service & Local RAG Retrieval Coordinator.
+
+Purpose:
+Coordinates local Retrieval-Augmented Generation (RAG) by scanning user-provided
+documents in `Knowledge/`, incrementally indexing text into an FTS5 full-text
+search store, and retrieving relevance-ranked context for local AI grounding.
+
+Responsibilities:
+- Recursive directory scanning with media type detection and non-text rejection.
+- SHA-256 file checksum calculation for incremental deduplication (avoids re-indexing unchanged files).
+- Document parsing delegation via `DocumentParserFactory`.
+- Sliding-window text chunking via `TextChunker` (default 600 chars with 100 char overlap).
+- Search query execution against SQLite FTS5 with BM25 ranking.
+- Formatting citation passages with document name and section metadata.
+
+Important Dependencies:
+- `app.knowledge.parsers.DocumentParserFactory`: Multi-format text extractors.
+- `app.knowledge.chunker.TextChunker`: Deterministic sliding-window chunker.
+- `app.knowledge.store.KnowledgeStore`: SQLite FTS5 virtual table repository.
+
+Deliberately Does Not Handle:
+- Language model prompt completion or answer synthesis (handled in `app.ai.local_service`).
+- Long-term chat dialogue persistence (handled in `app.memory`).
 """
 
 from dataclasses import dataclass
@@ -34,7 +55,11 @@ class IndexingReport:
 
 
 class KnowledgeService:
-    """High-level service managing Zero's document knowledge base."""
+    """
+    High-level service managing Zero's document knowledge base and RAG retrieval.
+    
+    Coordinates document discovery, content deduplication, chunking, and FTS5 querying.
+    """
 
     def __init__(
         self,

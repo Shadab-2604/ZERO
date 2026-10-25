@@ -286,3 +286,7 @@ class KnowledgePanelWidget(QWidget):
 
             count = self.docs_layout.count()
             self.docs_layout.insertWidget(count - 1, card)
+
+    def refresh_all(self):
+        """Alias for reload_data to synchronize with navigation events."""
+        self.reload_data()

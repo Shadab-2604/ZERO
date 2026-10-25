@@ -114,6 +114,11 @@ class Settings(BaseSettings):
             "gui_theme": self.gui_theme,
         }
 
+    @property
+    def ollama_model_chat(self) -> str:
+        """Alias property returning active local chat model."""
+        return self.local_chat_model or self.ai_model or "llama3.2"
+
 
 # Global singleton instance
 _settings_instance: Settings | None = None

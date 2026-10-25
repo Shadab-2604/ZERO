@@ -103,16 +103,18 @@ def test_tts_failure_does_not_crash_session():
 def test_stop_speaking_halts_playback():
     """Verify stop_speaking interrupts playback and clears queue."""
     synth = SpeechSynthesizer()
-    synth._local_engine = MagicMock()
+    mock_engine = MagicMock()
+    synth._local_engine = mock_engine
 
-    # Enqueue multiple items
-    synth.speak("Sentence one")
-    synth.speak("Sentence two")
+    # Patch start_worker to prevent background thread from re-initializing real pyttsx3
+    with patch.object(synth, "start_worker"):
+        synth.speak("Sentence one")
+        synth.speak("Sentence two")
 
-    synth.stop()
-    assert synth.is_speaking is False
-    assert synth._queue.empty() is True
-    synth._local_engine.stop.assert_called()
+        synth.stop()
+        assert synth.is_speaking is False
+        assert synth._queue.empty() is True
+        mock_engine.stop.assert_called()
 
 
 def test_truthful_session_summary_without_hallucinations():

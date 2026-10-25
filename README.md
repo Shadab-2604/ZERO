@@ -1,189 +1,174 @@
-# ZERO AI — JARVIS Desktop Assistant (Phase 1: Foundation)
+# ZERO AI — Personal Desktop Assistant
 
-Zero is a personal AI system desktop assistant inspired by cinematic AI interfaces. Built with a modular Python backend and a futuristic native PySide6 desktop GUI, Zero features reactive state-driven animated vector HUD elements, asynchronous audio/speech pipelines, local REST APIs, persistent SQLite activity and memory stores, and honest offline demo capabilities.
-
----
-
-## Key Features
-
-1. **Futuristic Cinematic GUI (PySide6)**:
-   - Primary near-black palette (`#050505`) with `#00FF88` neon green accents.
-   - Vector-animated reactive AI Orb featuring dynamic pulsing outer rings, glowing core, and state-adaptive visual feedback (SLEEPING, READY, LISTENING, THINKING, SPEAKING, ERROR).
-   - Interactive Left Navigation Sidebar, Main Assistant Transcript, Collapsible Right HUD Telemetry Panel, and Real-time Status Bar.
-
-2. **Wake & Sleep State Engine**:
-   - Explicit Assistant State Machine: `STARTING`, `SLEEPING`, `READY`, `LISTENING`, `THINKING`, `SPEAKING`, `ERROR`.
-   - Voice and text commands: `"Zero, wake up"`, `"Zero, sleep"`, `"Zero, give me today's briefing"`, `"Zero, summarize yesterday's work"`, `"Zero, stop speaking"`, and `"Zero, open settings"`.
-
-3. **Truthful Daily Briefing & Project Memory**:
-   - Local timezone-aware greetings (`"Good morning"`, `"Good afternoon"`, `"Good evening"`).
-   - Generates authentic briefings from local activity events, session summaries, task items, and health checks.
-   - Zero fabrication: On a fresh launch, truthfully states it is the first recorded session without inventing phantom tasks.
-   - Avoids repetitive duplicate briefings within the same active session unless explicitly prompted.
-
-4. **Modular AI Provider Abstraction**:
-   - Built-in honest **Local Demo AI Provider**: Works 100% offline without requiring external API keys.
-   - Plug-and-play Cloud Provider abstraction: Supports OpenAI, Gemini, Anthropic, and local Ollama via environment variables.
-
-5. **Integrated Local REST API (FastAPI)**:
-   - Bound to `127.0.0.1:8765` for desktop isolation and security.
-   - Endpoints:
-     - `GET /health`: Comprehensive subsystem telemetry.
-     - `GET /api/assistant/state`: Live assistant state.
-     - `POST /api/assistant/wake`: Wake assistant.
-     - `POST /api/assistant/sleep`: Sleep assistant.
-     - `POST /api/assistant/chat`: Converse with Zero.
-     - `GET /api/briefing/today`: Retrieve current briefing.
-     - `GET /api/activity/recent`: Recent stored activity.
-     - `GET /api/settings/public`: Safe non-secret settings.
-
-6. **Desktop Audio Subsystem**:
-   - Asynchronous speech synthesis (TTS via pyttsx3) and speech recognition (STT via SpeechRecognition) running in dedicated background worker threads to keep the UI smooth and non-blocking.
-   - Non-blocking push-to-talk, speech interruption (`"Zero, stop speaking"`), and microphone mute switch.
+Zero is an advanced, local-first personal AI desktop assistant inspired by cinematic AI interfaces (JARVIS). Built with a decoupled, high-performance Python architecture and a native PySide6 graphical interface, Zero features reactive vector HUD elements, a real-time floating Live Caption HUD, streaming PCM Voice Activity Detection (VAD) with instant barge-in interruption, a local SQLite FTS5 Knowledge RAG store, safe allowlisted Windows desktop automation, and 100% offline open-weight LLM inference powered by Ollama.
 
 ---
 
-## Quick Start Guide
+## 🌟 Key Capabilities
 
-### 1. Requirements
-- Python 3.11 or Python 3.12 (64-bit recommended)
-- Windows, Linux, or macOS
+1. **Local-First AI Intelligence (Ollama HTTP 127.0.0.1:11434)**:
+   - **Dual-Model Intelligent Routing**:
+     - **General Assistant**: `llama3.2:latest` (3B) for ultra-fast, natural conversational responses, summaries, and daily briefings.
+     - **Coding & Engineering**: `qwen2.5-coder:7b` for code synthesis, multi-file refactoring, debugging, and SQL queries.
+     - **Deterministic Calculations**: Evaluated locally in Python using AST parsing for 100% precision with zero LLM arithmetic hallucination.
+   - **Zero Cloud Leakage**: No conversation or personal data ever leaves your computer.
 
-### 2. Windows Installation & Launch
-Run the automated batch script:
-```cmd
-run.bat
-```
-This script will automatically:
-1. Verify Python availability.
-2. Create `.venv` if not already present.
-3. Seed `.env` from `.env.example`.
-4. Install all dependencies from `requirements.txt`.
-5. Launch the Zero AI Desktop Assistant.
+2. **Real-Time Streaming Voice & Floating Live Caption HUD**:
+   - **Low-Latency Streaming PCM Audio**: Uses PyAudio with dynamic RMS energy Voice Activity Detection (VAD).
+   - **Silence Continuation Window**: 1.8-second pause threshold with up to 5.0-second continuation to let you pause mid-thought without premature submission.
+   - **Instant Barge-In Interruption**: Start speaking at any point during assistant speech to instantly halt Windows SAPI5 TTS playback and transition to the `INTERRUPTED` state.
+   - **Floating Semi-Transparent HUD**: Transcribes user speech and displays assistant responses in real-time above other desktop windows.
 
-### 3. Linux / macOS Launch
-Run the startup shell script:
-```bash
-chmod +x run.sh
-./run.sh
-```
+3. **Local Knowledge RAG Engine (`Knowledge/`)**:
+   - Ingests user-provided reference documents (`.pdf`, `.docx`, `.pptx`, `.xlsx`, `.txt`, `.md`).
+   - SQLite FTS5 full-text indexing with BM25 keyword relevance ranking and SHA-256 content deduplication.
+   - Grounded context retrieval with relative file path citations in assistant responses.
 
-### 4. Manual Setup
-```bash
-# Create virtual environment
-python -m venv .venv
+4. **Safe Windows Desktop Automation & System Diagnostics**:
+   - Enumerate visible application windows, window states (normal, minimized, maximized), and process telemetry.
+   - Bring windows to foreground, minimize, maximize, and restore.
+   - Graceful application closure via `WM_CLOSE` (detects unsaved prompts without auto-dismissing).
+   - Launch verified applications from an approved system allowlist (Chrome, Notepad, Calc, Explorer, Terminal, Task Manager).
+   - Deep network diagnostics (DNS lookup, ICMP ping latency, network interface enumeration, socket port connectivity).
+   - Strict security: Zero arbitrary shell execution, zero registry writes, zero administrator elevation.
 
-# Activate virtual environment
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
+5. **Verified HTML-to-PDF Document Generation (`exports/`)**:
+   - Compiles executive markdown reports into modern styled HTML documents with syntax-highlighted code boxes and structured tables.
+   - Headless Chromium rendering via Playwright exporting verified PDF artifacts directly into `exports/`.
 
-# Install requirements
-pip install -r requirements.txt
-pip install -e . --no-deps
+6. **Stitch Obsidian Command PySide6 Desktop GUI**:
+   - High-contrast obsidian dark palette (`#050505` canvas, `#101412` surface, `#151A18` container, `#1E2623` border) with `#00FF88` cybernetic neon green accents.
+   - **Unified 36px Titlebar**: Integrated window title, active local model chip (`llama3.2 [LOCAL]`), real-time CPU & RAM hardware telemetry, and native window actions.
+   - **64px Slim Navigation Rail**: Quick navigation across Command Center, Live Transcript & Code, Knowledge Vault, System Control, Model Settings, and Diagnostics.
+   - **Command Center Screen**: Live telemetry inference (Ollama latency, sensor states, memory), Procedural dynamic AI Core Orb with reactive state transitions (`READY`, `LISTENING`, `HEARING YOU`, `PROCESSING`, `SPEAKING`, `INTERRUPTED`, `ERROR`), Quick Action Deck (*Analyze Display*, *Index Local Docs*, *Automate Active App*, *Export Session PDF*), and real-time auditable event stream.
+   - **Live Voice Transcript & Code Intelligence Screen**: Dual-pane workspace with live activity filters (*All Activity*, *Speech Only*, *Code Outputs*, *Tool Executions*), instant `Ctrl+F` search, TTS speech re-synthesis (*Listen Again*), syntax-formatted code container with line numbering, copy action, and safe, user-confirmed execution sandbox.
+   - **System Control & Automation Screen**: Live Managed Windows Registry bento grid populated from real Win32 APIs, window actions (*Focus*, *Minimize*, *Maximize*, *Restore*, *Graceful Close* with unsaved work prompt protection, *Send to Background*, *Tile Left*), Command Palette (`Ctrl+K`), and Target Ambiguity Resolution modal.
+   - **Persistent 40px Bottom Voice Dock**: Dynamic real-time audio equalizer bars, state badge, microphone mute toggle, speech interruption (`[ESC]`), and force push-to-talk (`Hold [Space]`).
 
-# Seed configuration
-cp .env.example .env
+7. **Isolated Local REST API (FastAPI 127.0.0.1:8765)**:
+   - Loopback-bound REST API for process isolation and IPC.
+   - Endpoints for health telemetry, assistant state, chat conversation, briefings, knowledge sync, and artifact downloads.
 
-# Launch application
-python run.py
-```
+---
 
-### 5. Execution Modes
-- **Streaming Voice Assistant with Live Captions HUD**:
-  ```bash
-  python run.py --voice
-  ```
-- **Desktop GUI + API Server (Default)**:
-  ```bash
-  python run.py
-  ```
-- **Interactive Terminal Assistant (CLI mode)**:
-  ```bash
-  python run.py --cli
-  ```
-- **Local REST API only (Headless mode)**:
-  ```bash
-  python run.py --api-only
+## 🚀 Quick Start Guide
+
+### 1. Prerequisites
+- **OS**: Windows 10/11 (64-bit recommended)
+- **Python**: 3.11 or 3.12
+- **Ollama**: Installed and running locally (`ollama serve`)
+  ```powershell
+  ollama pull llama3.2
+  ollama pull qwen2.5-coder:7b
   ```
 
----
+### 2. Launching Zero
 
-## Collaboration & Developer Documentation
+Launch Zero using the unified `run.py` entry point:
 
-For complete, step-by-step developer guides on contributing, setting up on a fresh machine, and configuring local Ollama models:
+- **Desktop GUI Mode (Default)**:
+  ```powershell
+  .\.venv\Scripts\python.exe run.py
+  ```
+- **Streaming Voice Assistant with Floating Live Caption HUD**:
+  ```powershell
+  .\.venv\Scripts\python.exe run.py --voice
+  ```
+- **Interactive Terminal Assistant (CLI Mode)**:
+  ```powershell
+  .\.venv\Scripts\python.exe run.py --cli
+  ```
+- **Headless Local REST API Server**:
+  ```powershell
+  .\.venv\Scripts\python.exe run.py --api-only
+  ```
 
-- 📖 **[GitHub Documentation Hub](file:///c:/D-drive/code/ZERO/GitHub/README.md)**: Main developer and collaboration center.
-- 🚀 **[Setup from Scratch on Windows](file:///c:/D-drive/code/ZERO/GitHub/SETUP_FROM_SCRATCH_WINDOWS.md)**: Clean installation for new contributors.
-- 🦙 **[Local Ollama & Llama Setup](file:///c:/D-drive/code/ZERO/GitHub/OLLAMA_LLAMA_LOCAL_SETUP.md)**: 100% offline open-weight model setup.
-- 🛡️ **[Safe GitHub Push Guide](file:///c:/D-drive/code/ZERO/GitHub/SAFE_GITHUB_PUSH_GUIDE.md)**: Step-by-step safe Git initialization and push.
-- 🔒 **[Security Pre-Push Checklist](file:///c:/D-drive/code/ZERO/GitHub/SECURITY_PRE_PUSH_CHECKLIST.md)**: Secret audit and privacy verification.
-- 🤝 **[Collaboration Workflow](file:///c:/D-drive/code/ZERO/GitHub/COLLABORATION_WORKFLOW.md)**: Branching, pull requests, and peer review.
-- 📋 **[Version Compatibility Matrix](file:///c:/D-drive/code/ZERO/GitHub/VERSION_COMPATIBILITY.md)**: Validated software and dependency versions.
-- 🔧 **[Troubleshooting Guide](file:///c:/D-drive/code/ZERO/GitHub/TROUBLESHOOTING.md)**: Audio device, SAPI5, and Ollama diagnostics.
-- 📜 **[Contributing Guidelines](file:///c:/D-drive/code/ZERO/CONTRIBUTING.md)** & **[Security Policy](file:///c:/D-drive/code/ZERO/SECURITY.md)**
-
-
----
-
-## Configuration & Environment Variables
-
-Copy `.env.example` to `.env` to configure Zero:
-
-| Variable | Default | Description |
-|---|---|---|
-| `APP_NAME` | `Zero` | Assistant identity name |
-| `APP_ENV` | `development` | Operating environment (`development`, `production`, `testing`) |
-| `APP_HOST` | `127.0.0.1` | Local REST API host (loopback isolation) |
-| `APP_PORT` | `8765` | Local REST API port |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
-| `AI_PROVIDER` | `demo` | AI model provider (`demo`, `openai`, `gemini`, `anthropic`, `ollama`) |
-| `AI_API_KEY` | *(empty)* | Secret key for cloud provider (never displayed or logged) |
-| `AI_MODEL` | *(empty)* | Custom model name (e.g. `gpt-4o-mini`, `gemini-1.5-flash`) |
-| `VOICE_ENABLED` | `false` | Enable or disable voice audio I/O |
-| `WAKE_WORD_ENABLED` | `false` | Enable continuous wake word listener |
-| `WAKE_WORD` | `zero wake up` | Wake phrase |
-| `DATABASE_URL` | `sqlite:///./data/zero.db` | Persistent database path |
-| `TIMEZONE` | `Asia/Kolkata` | Local timezone for greetings and timestamps |
-| `BRIEFING_ON_STARTUP` | `true` | Deliver briefing upon initial launch |
-| `BRIEFING_ON_WAKE` | `true` | Deliver briefing upon wake command |
+Or double-click `run.bat` on Windows.
 
 ---
 
-## Running the Automated Test Suite
+## 📁 Repository Structure
 
-Zero includes an automated test suite covering all 18 core verification scenarios:
-```bash
-.venv\Scripts\pytest.exe -v
-```
-
----
-
-## Project Structure
-
-```
-zero/
+```text
+ZERO/
 ├── app/
-│   ├── main.py                     # GUI desktop entrypoint
-│   ├── bootstrap.py                # Subsystem initialization & boot sequence
-│   ├── config/                     # Settings & rotating log configuration
-│   ├── api/                        # FastAPI local loopback server & routes
-│   ├── core/                       # State machine, intent router, briefing, assistant
-│   ├── ai/                         # Provider abstraction, demo provider, cloud provider
-│   ├── voice/                      # TTS engine, speech recognizer, wake listener
-│   ├── memory/                     # SQLite database models, conversation & activity stores
-│   ├── system/                     # Subsystem health monitor & telemetry
-│   ├── gui/                        # PySide6 windows, theme QSS, and HUD widgets
-│   └── utils/                      # Path resolution & timezone utilities
-├── data/                           # Local SQLite database files
-├── logs/                           # Rotating application logs
-├── tests/                          # Automated pytest test suites
-├── docs/                           # Architectural & setup documentation
-├── .env.example                    # Documented configuration template
-├── requirements.txt                # Pinned dependency specifications
-├── run.py                          # Unified launcher (GUI, CLI, API-only)
-├── run.bat                         # Windows launch script
-├── run.sh                          # Linux/macOS launch script
-└── README.md
+│   ├── __init__.py           # Subsystem package root metadata and versioning
+│   ├── bootstrap.py          # Unified application bootstrap and hardware discovery
+│   ├── main.py               # GUI mode entry point runner
+│   ├── ai/                   # Local AI abstraction, Ollama routing, and connectivity tests
+│   ├── api/                  # Isolated loopback REST API server (FastAPI 127.0.0.1:8765)
+│   ├── config/               # Pydantic Settings and rotating logging setup
+│   ├── controllers/          # Canonical controller facade re-exporting assistant components
+│   ├── core/                 # Central assistant engine, state machine, calculator, intent router
+│   ├── database/             # Canonical database facade re-exporting engine and models
+│   ├── exports/              # Document compilation and verified Playwright PDF artifact generation
+│   ├── gui/                  # PySide6 desktop graphical interface, theme QSS, and widgets
+│   ├── knowledge/            # Local RAG knowledge base subsystem (parsers, chunker, FTS5 store)
+│   ├── memory/               # SQLite database models, conversation & activity repositories
+│   ├── models/               # Canonical schemas and database models facade
+│   ├── services/             # High-level services facade (desktop control, window manager)
+│   ├── system/               # System health and hardware diagnostic probes
+│   ├── tools/                # Approved security-allowlisted tools and action registry
+│   ├── ui/                   # Canonical UI facade re-exporting MainWindow and HUD
+│   ├── utils/                # Path resolution and timezone utilities
+│   └── voice/                # Real-time audio streaming, VAD, SAPI5 TTS, and wake listener
+├── Knowledge/                # User reference documents for local RAG (.pdf, .docx, .txt, etc.)
+├── data/                     # Local SQLite database (zero.db)
+├── exports/                  # Generated verified PDF reports and documents
+├── logs/                     # Rotating application execution logs (zero.log)
+├── scripts/                  # Standalone diagnostic, evaluation, and benchmark scripts
+├── tests/                    # 187 automated unit, integration, and red-team evaluation tests
+├── docs/                     # Architectural, cleanup, and developer guides
+├── GitHub/                   # GitHub collaboration and setup documentation
+├── .env.example              # Template configuration file with default parameters
+├── .gitignore                # Comprehensive Git exclusion rules
+├── pyproject.toml            # Project packaging metadata and test configurations
+├── requirements.txt          # Pinned compatible Python runtime dependencies
+├── run.py                    # Multi-mode unified CLI entry point
+├── run.bat                   # Windows batch launcher script
+└── run.sh                    # Linux/macOS launcher script
 ```
+
+---
+
+## ⌨️ Desktop Keyboard Shortcuts
+
+| Shortcut | Scope | Action |
+| :--- | :--- | :--- |
+| `Ctrl+K` | Global / System Control | Open Command Palette / Window Quick Query |
+| `Ctrl+F` | Transcript Workspace | Search dialogue history with instant match navigation |
+| `Win+Shift+Z` | System-wide Hotkey | Bring Z.E.R.O. window to foreground or restore from tray |
+| `Esc` | Voice Playback | Instant barge-in speech interruption |
+| `Hold [Space]` | Footer Voice Dock | Push-to-talk force microphone recording |
+
+---
+
+## 🧪 Automated Testing
+
+Zero includes an extensive automated test suite covering all subsystems (192 tests):
+
+```powershell
+# Run the complete test suite (192 tests, 100% passing)
+.\.venv\Scripts\python.exe -m pytest
+
+# Run with verbose test-by-test reporting
+.\.venv\Scripts\python.exe -m pytest -v
+
+# Run targeted subsystem test suites
+.\.venv\Scripts\python.exe -m pytest tests/test_stitch_gui_integration.py
+.\.venv\Scripts\python.exe -m pytest tests/test_local_ollama_integration.py
+.\.venv\Scripts\python.exe -m pytest tests/test_desktop_control.py
+.\.venv\Scripts\python.exe -m pytest tests/test_voice_interruption_and_captions.py
+.\.venv\Scripts\python.exe -m pytest tests/test_knowledge_and_rag.py
+```
+
+---
+
+## 📖 Documentation Directory
+
+- 📐 **[System Architecture Guide](file:///c:/D-drive/code/ZERO/docs/ARCHITECTURE.md)**: Full component breakdown, Mermaid sequence diagrams, and extension tutorials.
+- 🧹 **[Codebase Audit & Cleanup Plan](file:///c:/D-drive/code/ZERO/docs/CODEBASE_AUDIT_AND_CLEANUP_PLAN.md)**: Structural audit and modularization plan.
+- 📋 **[Cleanup Candidates Inventory](file:///c:/D-drive/code/ZERO/docs/CLEANUP_CANDIDATES.md)**: Evaluation of artifacts, mockups, and cache files.
+- 🚀 **[Windows Setup Guide](file:///c:/D-drive/code/ZERO/INSTALL_WINDOWS.md)**: Complete guide to setting up Zero, Python, and Ollama on Windows.
+- 🤝 **[GitHub Developer Hub](file:///c:/D-drive/code/ZERO/GitHub/README.md)**: Collaboration guide, safe git push workflows, and pre-push security checklists.
+- 📜 **[Contributing Guidelines](file:///c:/D-drive/code/ZERO/CONTRIBUTING.md)** & **[Security Policy](file:///c:/D-drive/code/ZERO/SECURITY.md)**

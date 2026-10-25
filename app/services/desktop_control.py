@@ -1,23 +1,43 @@
 """
-Zero AI Safe Windows Desktop Control & System Awareness Service.
+Zero AI — Safe Windows Desktop Control & System Awareness Service.
+
+Purpose:
+Provides strictly allowlisted, read-mostly desktop automation and system awareness
+for Microsoft Windows. Enables Zero to enumerate application windows, manage window
+states, report real-time system resource telemetry, and launch verified executables.
+
+Responsibilities:
+- Application window enumeration and title filtering via Win32 API / ctypes.
+- Window state management: bringing windows to the foreground, minimizing, restoring, maximizing.
+- Graceful window termination: sends `WM_CLOSE` messages rather than `SIGKILL`, safely
+  allowing applications to display "save unsaved changes" dialogues without data loss.
+- Registered application discovery: scans standard Windows Start Menu paths and
+  `SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths` to locate official executables.
+- Read-only hardware telemetry: CPU load, RAM usage, storage volume capacity, and network counters via `psutil`.
 
 Strict Security & Permission Policy:
 - ALLOWED:
-  - Enumerate visible application windows and titles.
-  - Enumerate running user processes and resource metadata.
-  - Discover installed applications from Start Menu and registered App Paths.
-  - Read-only OS, CPU, Memory, Disk, and Network telemetry.
-  - Launch verified application executables (no arbitrary command strings or shell scripts).
-  - Bring to foreground, minimize, restore, and maximize windows.
-  - Gracefully request window closure via WM_CLOSE (detect unsaved prompts without auto-dismissing).
+  - Enumerating visible application windows and process metadata.
+  - Launching verified application executables directly (no cmd/powershell string injection).
+  - Window state modifications (foreground, minimize, maximize, restore, WM_CLOSE).
+  - Read-only system and hardware telemetry.
 - PROHIBITED:
-  - Arbitrary filesystem writing, deletion, or modification.
-  - Windows registry modifications.
-  - System or firewall setting alterations.
-  - Arbitrary CMD/PowerShell/bash command execution.
-  - Force killing processes (SIGKILL / taskkill /F).
-  - Reading credential databases, private keys, or .env files.
-  - Requesting administrator elevation.
+  - Arbitrary shell script or command execution.
+  - Arbitrary filesystem file writes, modifications, or deletions.
+  - Windows registry modifications or key destruction.
+  - Firewall, proxy, or system network setting alterations.
+  - Force-killing processes (`taskkill /F` or `SIGKILL`).
+  - Accessing credential vaults, private keys, or `.env` files.
+  - Requesting administrative elevation (`runas` / UAC bypass).
+
+Important Dependencies:
+- `pywin32` (`win32gui`, `win32process`, `win32con`, `win32api`) with seamless `ctypes` fallback.
+- `psutil`: Cross-platform process and system telemetry library.
+- `winreg`: Read-only Windows Registry queries for official App Paths.
+
+Deliberately Does Not Handle:
+- Web browser DOM parsing or web scraping (handled in `app.tools.browser_tools`).
+- Arbitrary script execution (prohibited by design).
 """
 
 import ctypes
@@ -47,7 +67,12 @@ except ImportError:
 
 
 class DesktopControlService:
-    """Windows desktop automation and system awareness engine."""
+    """
+    Windows desktop automation and system awareness engine.
+    
+    Provides safe, permission-bounded operations for window management,
+    telemetry reporting, and application launching with zero privilege escalation.
+    """
 
     def __init__(self):
         self._user32 = ctypes.windll.user32
@@ -210,6 +235,14 @@ class DesktopControlService:
 
                 is_minimized = bool(self._user32.IsIconic(hwnd))
                 is_maximized = bool(self._user32.IsZoomed(hwnd))
+                fg_hwnd = win32gui.GetForegroundWindow() if PYWIN32_AVAILABLE else 0
+                is_focused = bool(hwnd == fg_hwnd)
+                mem_mb = 0.0
+                try:
+                    p_obj = psutil.Process(pid)
+                    mem_mb = round(p_obj.memory_info().rss / (1024 * 1024), 1)
+                except Exception:
+                    pass
 
                 windows.append({
                     "hwnd": hwnd,
@@ -218,6 +251,8 @@ class DesktopControlService:
                     "process_name": proc_name,
                     "is_minimized": is_minimized,
                     "is_maximized": is_maximized,
+                    "is_focused": is_focused,
+                    "memory_mb": mem_mb,
                 })
             except Exception as e:
                 logger.debug("Error inspecting hwnd %d: %s", hwnd, e)
@@ -277,16 +312,43 @@ class DesktopControlService:
     # Window Matching
     # =========================================================================
 
-    def find_window(self, identifier: str) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    def find_window(self, identifier: str | int) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
         """
-        Find a window by natural-language title or process name substring.
+        Find a window by HWND, natural-language title, or process name substring.
         Returns: (best_match_dict_or_None, all_candidate_matches)
         """
-        if not identifier or not identifier.strip():
+        if identifier is None:
             return None, []
 
-        clean_id = identifier.strip().lower()
         windows = self.list_windows()
+
+        # Check direct integer HWND or hex/decimal string
+        target_hwnd = None
+        if isinstance(identifier, int):
+            target_hwnd = identifier
+        elif isinstance(identifier, str):
+            clean_str = identifier.strip()
+            if clean_str.lower().startswith("hwnd:"):
+                clean_str = clean_str[5:].strip()
+            if clean_str.lower().startswith("0x"):
+                try:
+                    target_hwnd = int(clean_str, 16)
+                except ValueError:
+                    pass
+            elif clean_str.isdigit():
+                try:
+                    target_hwnd = int(clean_str)
+                except ValueError:
+                    pass
+
+        if target_hwnd is not None:
+            for w in windows:
+                if w["hwnd"] == target_hwnd:
+                    return w, [w]
+
+        clean_id = str(identifier).strip().lower()
+        if not clean_id:
+            return None, []
 
         # Alias expansion
         target_tokens = clean_id.split()
@@ -319,6 +381,20 @@ class DesktopControlService:
                 return m, matches
 
         return matches[0], matches
+
+    def get_foreground_window_info(self) -> dict[str, Any] | None:
+        """Return information about the currently active foreground window."""
+        if not PYWIN32_AVAILABLE:
+            return None
+        try:
+            fg = win32gui.GetForegroundWindow()
+            if not fg:
+                return None
+            target, _ = self.find_window(fg)
+            return target
+        except Exception as e:
+            logger.debug("Error getting foreground window info: %s", e)
+            return None
 
     # =========================================================================
     # Window Actions (Focus, Minimize, Restore, Maximize, Close)
@@ -540,6 +616,87 @@ class DesktopControlService:
                 "success": False,
                 "verified": False,
                 "message": f"Error requesting close for '{title}': {str(e)}",
+            }
+
+    def tile_window_left(self, window_identifier: str | int) -> dict[str, Any]:
+        """Tile target window to the left half of the display work area."""
+        target, candidates = self.find_window(window_identifier)
+        if not target:
+            return {
+                "action": "tile_window_left",
+                "target": str(window_identifier),
+                "success": False,
+                "verified": False,
+                "message": f"Could not find an open window matching '{window_identifier}'.",
+            }
+
+        hwnd = target["hwnd"]
+        try:
+            if not PYWIN32_AVAILABLE:
+                return {
+                    "action": "tile_window_left",
+                    "target": target["title"],
+                    "success": False,
+                    "verified": False,
+                    "message": "pywin32 not available for window tiling.",
+                }
+
+            hmon = win32api.MonitorFromWindow(hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+            mon_info = win32api.GetMonitorInfo(hmon)
+            rc_work = mon_info.get("Work", (0, 0, 1920, 1080))
+            left, top, right, bottom = rc_work
+            half_width = (right - left) // 2
+            height = bottom - top
+
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            win32gui.MoveWindow(hwnd, left, top, half_width, height, True)
+            time.sleep(0.1)
+            return {
+                "action": "tile_window_left",
+                "target": target["title"],
+                "success": True,
+                "verified": True,
+                "message": f"Tiled '{target['title']}' to left half of display.",
+            }
+        except Exception as e:
+            return {
+                "action": "tile_window_left",
+                "target": target["title"],
+                "success": False,
+                "verified": False,
+                "message": f"Error tiling '{target['title']}': {str(e)}",
+            }
+
+    def send_to_background(self, window_identifier: str | int) -> dict[str, Any]:
+        """Send target window to background by minimizing or lowering Z-order."""
+        target, candidates = self.find_window(window_identifier)
+        if not target:
+            return {
+                "action": "send_to_background",
+                "target": str(window_identifier),
+                "success": False,
+                "verified": False,
+                "message": f"Could not find an open window matching '{window_identifier}'.",
+            }
+
+        hwnd = target["hwnd"]
+        try:
+            win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+            time.sleep(0.1)
+            return {
+                "action": "send_to_background",
+                "target": target["title"],
+                "success": True,
+                "verified": True,
+                "message": f"Sent '{target['title']}' to background.",
+            }
+        except Exception as e:
+            return {
+                "action": "send_to_background",
+                "target": target["title"],
+                "success": False,
+                "verified": False,
+                "message": f"Error sending '{target['title']}' to background: {str(e)}",
             }
 
     # =========================================================================
